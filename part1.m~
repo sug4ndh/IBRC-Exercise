@@ -1,0 +1,41 @@
+clc;
+clear;
+traindata = load('pedestrian_test.mat');
+img_n = length(traindata.ims);
+
+Xtrain = zeros(9*5*31, img_n);
+for i = 1:img_n
+    hog = vl_hog(im2single(traindata.ims{i}),4);
+    Xtrain(:,i)=hog(:);
+end
+%xtr = mean(Xtrain);
+Xtrain_m = sum(mean(Xtrain))/img_n;
+Xtrain_s = sum(std(Xtrain))/img_n;
+Xtrain_n = (Xtrain - Xtrain_m)/Xtrain_s;
+
+lambda = 0.0001;
+t_epoch = 40;
+
+[w, b] = TrainSVM(Xtrain, traindata.y, lambda, t_epoch);
+
+
+
+testdata = load('pedestrian_test.mat');
+n_testimg = length(testdata.ims);
+
+Xtest = zeros(9*5*31, n_testimg);
+for i = 1:n_testimg
+    hog_test = vl_hog(im2single(testdata.ims{i}),4);
+    Xtest(:,i)=hog_test(:);
+end
+%xtr = mean(Xtrain);
+%Xtest_m = sum(mean(Xtest))/img_n;
+%Xtest_s = sum(std(Xtest))/img_n;
+Xtest_n = (Xtest - Xtrain_m)/Xtrain_s;
+
+
+yy = (w' * Xtest_n + b);
+ys = sign(yy);
+
+coeff_train = (n_imgtest - sum(ys'~=testdata.y))/im;
+acc = sum(ys==testdata.y')/img_n;
